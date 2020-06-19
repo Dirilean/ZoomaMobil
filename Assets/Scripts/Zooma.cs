@@ -6,13 +6,26 @@ using UnityEngine.UIElements;
 
 public class Zooma : MonoBehaviour
 {
-    public float angle = 0;
+    public float force=1f;
+    public Renderer indicator;
+
+    public Transform createPoint;
+    public Transform shootPoint;
+
     Camera cam;
-    public GameObject prefabBullet;
+    Vector3 mousePoint;
+    float angle = 0;
+
+    GameObject curBall;
+    BallItemData nextBall;
 
     private void Awake()
     {
         cam = Camera.main;
+    }
+    private void Start()
+    {
+        SetNextBall();
     }
     void Update()
     {
@@ -22,6 +35,7 @@ public class Zooma : MonoBehaviour
             Shoot();
         }
     }
+
     void LookOnCursor()
     {     
         //заставляет персонажа следить за курсором мышки
@@ -30,14 +44,27 @@ public class Zooma : MonoBehaviour
         float hitdist = 0;
         if (playerPlane.Raycast(ray, out hitdist))
         {
-            Vector3 targetPoint = ray.GetPoint(hitdist);
-            transform.rotation = Quaternion.LookRotation(targetPoint - transform.position);
+            mousePoint = ray.GetPoint(hitdist);
+            transform.rotation = Quaternion.LookRotation(mousePoint - transform.position);
         }
     }
-
+    void NewBall()
+    {
+        curBall = Instantiate(nextBall.ball);
+        curBall.transform.SetPositionAndRotation(createPoint.position, createPoint.rotation);
+    }
+    //IEnumerator StartToShoot()
+    //{
+        
+    //}
     void Shoot()
     {
-        GameObject bullet = Instantiate(prefabBullet);
-        bullet.transform.SetPositionAndRotation(transform.position, transform.rotation);
+        curBall.GetComponent<Rigidbody>().AddForce((mousePoint - transform.position).normalized*force, ForceMode.Impulse);
+        SetNextBall();
+    }
+    void SetNextBall()
+    {
+        nextBall = BallData.instance.GetRandomBall();
+        indicator.material.color = nextBall.color;
     }
 }
