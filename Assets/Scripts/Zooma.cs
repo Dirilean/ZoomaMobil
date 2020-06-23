@@ -11,13 +11,16 @@ public class Zooma : MonoBehaviour
 
     public Transform createPoint;
     public Transform shootPoint;
+    public float pausetime;
 
     Camera cam;
     Vector3 mousePoint;
-    float angle = 0;
+    float accurancy = 0.2f;
 
     GameObject curBall;
     BallItemData nextBall;
+
+    bool pause = true;
 
     private void Awake()
     {
@@ -25,12 +28,13 @@ public class Zooma : MonoBehaviour
     }
     private void Start()
     {
+        nextBall = BallData.instance.GetRandomBall();
         SetNextBall();
     }
     void Update()
     {
         LookOnCursor();
-        if (Input.GetMouseButtonDown(0))
+        if (!pause && Input.GetMouseButtonDown(0))
         {
             Shoot();
         }
@@ -50,20 +54,33 @@ public class Zooma : MonoBehaviour
     }
     void NewBall()
     {
-        curBall = Instantiate(nextBall.ball);
+        curBall = Instantiate(nextBall.ball,transform);
         curBall.transform.SetPositionAndRotation(createPoint.position, createPoint.rotation);
+        StartCoroutine(StartToShoot());
     }
-    //IEnumerator StartToShoot()
-    //{
-        
-    //}
+    IEnumerator StartToShoot()
+    {
+        Rigidbody rb = curBall.GetComponent<Rigidbody>();
+        rb.isKinematic = true;
+        pause = true;
+        while(Vector3.Distance(curBall.transform.position, shootPoint.transform.position)>accurancy)
+        {
+            curBall.transform.position = Vector3.Lerp(curBall.transform.position, shootPoint.transform.position, Time.deltaTime * pausetime);
+            yield return null;
+        }
+        curBall.transform.position = shootPoint.transform.position;
+        rb.isKinematic = false;
+        pause = false;
+    }
     void Shoot()
     {
+        curBall.transform.parent = null;
         curBall.GetComponent<Rigidbody>().AddForce((mousePoint - transform.position).normalized*force, ForceMode.Impulse);
         SetNextBall();
     }
     void SetNextBall()
     {
+        NewBall();
         nextBall = BallData.instance.GetRandomBall();
         indicator.material.color = nextBall.color;
     }
